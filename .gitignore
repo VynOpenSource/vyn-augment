@@ -132,4 +132,4 @@ dmypy.json
 .pyre/
 
 # Remove output_data
-.output_data/
+images/output_data/

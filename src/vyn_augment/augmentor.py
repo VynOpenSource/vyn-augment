@@ -29,8 +29,7 @@ class Augmentor(object):
     https://github.com/mdbloice/Augmentor/blob/master/Augmentor/Operations.py
     """
 
-    def __init__(self, operations, std_noise=50, no_repetition=False, synthetic_image_creator=None,
-                 input_synthesizer_size=None, seed=None):
+    def __init__(self, operations, std_noise=50, no_repetition=False, seed=None):
         """
         Use seed if you want to apply the same transformation to different group of images. For instance, when images and
         masks need to be processed.
@@ -74,16 +73,12 @@ class Augmentor(object):
                          bounding_boxes=[[[x00_tp, y00_tp, x00_bl, y00_bl],[x01_tp, y01_tp, x01_bl, y01_bl]],[[x10_tp, y10_tp, x10_bl, y10_bl]]],
                          where xij and yij are the x and y position of image i box j, and tp and bl are top right and bottom left
 
-        :param synthetic_image_creator (function): A model that returns an image passing a random initialisation with input_synthesizer_size
-        :param input_synthesizer_size (tuple): The size of the synthesiser input.
         :param no_repetition (boolean): This will not allowed operations of the same kind to be performed simultanously.
         :param seed:
         """
         self.perform_checker = True
         self.seed = seed
         self._operations = operations
-        self.synthetic_image_creator = synthetic_image_creator
-        self.input_synthesizer_size = input_synthesizer_size
         self._std_noise = std_noise
 
         self.no_repetition = no_repetition
@@ -952,8 +947,10 @@ class Augmentor(object):
         """
         Add a grid mask to the images following https://arxiv.org/pdf/2001.04086.pdf
          :param images: A list of numpy arrays, each being an image
-         :param values: 8 values: Minimum and maximum value for the initial x position (top left corner of the top left square)
-                                    Minimum and maximum value for the initial y position (top left corner of the top left square)
+         :param values: 8 values: Minimum and maximum value for the initial x position (top left corner of the top
+                                    left square)
+                                    Minimum and maximum value for the initial y position (top left corner of the top
+                                    left square)
                                     Minimum and maximum value (range) for the width of the square
                                     Minimum and maximum value (range) for the height of the square
                                     Minimum and maximum value (range) for the x distance between square

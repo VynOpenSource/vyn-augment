@@ -113,7 +113,7 @@ def set_generator(base):
                         X = np.empty((self.batch_size, *im.shape), dtype=np.float32)
 
                         for label_i in label:
-                            yi = np.zeros(self.batch_size, dtype=np.float32)
+                            yi = []
                             if hasattr(label_i, 'shape'):
                                 yi = np.zeros((self.batch_size, *label_i.shape), dtype=np.float32)
                             y.append(yi)
@@ -121,7 +121,7 @@ def set_generator(base):
                     X[i: i + 1, ...] = im
 
                     for ii, label_i in enumerate(label):
-                        y[ii][i, ...] = label_i
+                        y[ii].append(label_i)
 
                     i += 1
                 self.iterator += 1
@@ -134,10 +134,14 @@ def set_generator(base):
             if self.not_batch:
                 X = X[0, ...]
                 for ii, y_i in enumerate(y):
-                    y[ii] = y_i[0, ...]
+                    y[ii] = y_i[0]
 
             if len(y) == 1:
                 y = y[0]
+            elif not self.not_batch:
+                for ii, y_i in enumerate(y):
+                    y[ii] = np.array(y_i)
+
             X = X.astype(np.float32)
 
             return X, y
@@ -180,11 +184,14 @@ def set_generator(base):
                 if output is None:
                     return None, None
 
-                if isinstance(output, np.array):
+                if isinstance(output, np.ndarray):
                     im = output
                     y = label
                 else:
                     im, y = output
+
+                if isinstance(y, (str, tuple)):
+                    y = [y]
 
             except Exception as e:
                 return None, None

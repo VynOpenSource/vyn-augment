@@ -20,12 +20,11 @@ def set_generator_classifier(root_dir, preprocessing_function=None, batch_size=1
     input_data = []
     for folder in os.listdir(root_dir):
         dirname = os.path.join(root_dir, folder)
-        for filename in dirname:
+        for filename in os.listdir(dirname):
             filename = os.path.join(dirname, filename)
             input_data.append((folder, filename))
 
     # The conditions shuffle_per_label = True and shuffle_all_dataset = False are used to balance the dataset.
-
     generator = DataGenerator(input_data, batch_size=batch_size, shuffle_per_label=True, shuffle_all_dataset=False,
                               preprocessing_function=preprocessing_function, fix_iterations=number_of_images)
 
@@ -49,8 +48,9 @@ def set_generator_segmentor(image_dir, masks_dir, preprocessing_function=None, b
     """
     DataGenerator = set_generator('keras')
     input_data = []
-    for filename in image_dir:
+    for filename in os.listdir(image_dir):
         image_filename = os.path.join(image_dir, filename)
+        filename = filename[:filename.rfind('.')] + '.png'
         mask_filename = os.path.join(masks_dir, filename)
         input_data.append((mask_filename, image_filename))
 
@@ -61,7 +61,7 @@ def set_generator_segmentor(image_dir, masks_dir, preprocessing_function=None, b
     return generator
 
 
-def set_generator_obejct_detector(image_dir, bb_dir, preprocessing_function=None, batch_size=16,
+def set_generator_object_detector(image_dir, bb_dir, preprocessing_function=None, batch_size=16,
                                   number_of_images=100):
     """
     Set the generator with the data from the image and mask directories. The assumption is that the images and the
@@ -78,7 +78,7 @@ def set_generator_obejct_detector(image_dir, bb_dir, preprocessing_function=None
     """
     DataGenerator = set_generator('keras')
     input_data = []
-    for filename in image_dir:
+    for filename in os.listdir(image_dir):
         image_filename = os.path.join(image_dir, filename)
         filename[filename.rfind('.'):] = '.txt'
         mask_filename = os.path.join(bb_dir, filename)

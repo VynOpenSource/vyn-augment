@@ -3,7 +3,7 @@ import os
 import numpy as np
 from skimage.io import imread, imsave
 
-from bin.utils import set_generator_classifier
+from utils.data_processing import set_generator_classifier
 from src.vyn_augment.augmentor import Augmentor
 
 

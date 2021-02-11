@@ -1,8 +1,7 @@
 import math
 import os
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+
 import numpy as np
 from PIL import Image, ImageOps, ImageEnhance
 from skimage.io import imread
@@ -284,7 +283,7 @@ class Augmentor(object):
         """
         Check whether the bounding boxes are correctly passed.
         :param bbs (list): This should a list of lists of lists for each image a list of bounding
-                            boxes and eac hbounding box should be a list of 4 values [x0, y0, x1, y1]
+                            boxes and each bounding box should be a list of 4 values [x0, y0, x1, y1]
         :param num_images (int): The number of images
         :return: True if the bbs is correct otherwise false.
         """
@@ -1910,173 +1909,3 @@ class Augmentor(object):
             output['bounding_boxes'] = bbs
 
         return output
-
-
-def plot_bb_image(image, bbs):
-    """
-    Plot an image and a set of bounding boxes.
-    :param image (array): An array
-    :param bbs (list):  A list of lists, which inner list having four values.
-    :return: None
-    """
-
-    # Create figure and axes
-    fig, ax = plt.subplots(1)
-
-    # Display the image
-    ax.imshow(image)
-
-    for bb in bbs:
-        # Create a Rectangle patch
-        rect = patches.Rectangle((bb[0], bb[1]), bb[2] - bb[0], bb[3] - bb[1], linewidth=1, edgecolor='r',
-                                 facecolor='none')
-
-        # Add the patch to the Axes
-        ax.add_patch(rect)
-
-
-def test_object():
-    crop_image = lambda x, bb: x[bb[1]:bb[3], bb[0]:bb[2]]
-    root = os.path.realpath('../../../tests/augmentor')
-    bbs = [[[25, 123, 593, 318]], [[25, 65, 552, 360]]]
-    im1 = imread(os.path.join(root, 'car2.png'))
-    im2 = imread(os.path.join(root, 'car1.png'))
-    labels = [[0, 1], [1, 0]]
-
-    values_sample_pairing = [0.2, 0.5, [crop_image(im1, bbs[0][0]), crop_image(im2, bbs[1][0])], labels]
-
-    # config = {'crop': {'values': (0.4, 0.9)}}
-    d = {'rotate': {'values': (20, 60), 'use_colour': 0},
-         'zoom': {'values': (0.2, 0.4), 'use_colour': -1, 'use_replication': False, 'keep_size': True}}
-    config = {'change_object': {'values': ('Inter', True, d), 'mix_images': [im2], 'number_copies': (2, 5)}}
-    # config = {'flip': {'values': ['random'], 'probability': 1}}
-    # config = {'flip_object': {'values': ['random'], 'probability': 1}}
-    # config = {'grid_mask_object': (0, 0.2, 0, 0.2, 0.1, 0.15, 0.1, 0.15, 0.3, 0.3, 0.3, 0.3)}
-    config = {'occlusion_object': {'values': ('cutout', 0.2, 0.4, 0.6, 0.8), 'prob': 1.0, 'num_patches': 1}}
-    # config = {'rotate_object': {'values':(20, 60), 'use_colour':0}}
-    # config = {'rotate': {'values': (20, 60), 'use_colour': 0}}
-    # config = {'sample_pairing_object': {'values': values_sample_pairing, 'probability':1.0}}
-    # config = {'sharpness_object': (0,0.3)}
-    # config = {'shear_object': ('RANDOM', 10, 15)}
-    # config = {'skew_object': ('RANDOM', 0.3, 0.6)}
-    # config = {'solarise_object': {'probability': 1.0}}
-    # config = {'translate_object': {'values': ('all', 0.1, 0.3, 0.5, 0.7), 'probability': 1.0, 'use_colour':-1, 'use_replication':False}}
-    # config = {'translate': {'values': ('all', 0.1, 0.3, 0.5, 0.7), 'probability': 1.0, 'use_colour':[120,120,120], 'use_replication':True}}
-    # config = {'zoom_object': {'values':(0.2, 0.3), 'use_colour':-1, 'use_replication':False}}
-    # config = {'zoom': {'values':(1.2, 1.3), 'use_colour':-1, 'use_replication':False}}
-
-    image = os.path.join(root, 'mug1.jpg')
-    bb_im = [[[190, 30, 433, 242]]]
-
-    aug = Augmentor(config)
-    label = [0, 1]
-    im = aug.run([imread(image)], labels=[label], object_label=[[label]], mask_positions=[],
-                 bounding_boxes=bb_im)  # , mask_positions=[0]
-
-    if isinstance(im, dict):
-        label = im.get('labels', [label])[0]
-        bb_im = im.get('bounding_boxes', bb_im)
-        im = im['images']
-
-    # plt.imshow(np.squeeze(im[0]))
-    plot_bb_image(np.squeeze(im[0]), bb_im[0])
-    plt.title(f'label: {label}')
-    plt.show()
-    a = 1
-
-
-def test():
-    crop_image = lambda x, bb: x[bb[1]:bb[3], bb[0]:bb[2]]
-    root = os.path.realpath('../../../tests/augmentor')
-    bbs = [[[25, 123, 593, 318]], [[25, 65, 552, 360]]]
-    im1 = imread(os.path.join(root, 'car2.png'))
-    im2 = imread(os.path.join(root, 'car1.png'))
-    labels = [[0, 1], [1, 0]]
-
-    values_sample_pairing = [0.2, 0.5, [crop_image(im1, bbs[0][0]), crop_image(im2, bbs[1][0])], labels]
-
-    mix_images = [im1, im2]
-    image = os.path.join(root, 'mug1.jpg')
-    image = imread(image)
-    mix_images = [imresize(image, image.shape, anti_aliasing=True, preserve_range=True).astype(np.uint8) for image in
-                  mix_images]
-
-    config1 = {'blur': {'values': ('gaussian', 0.7, 1.0), 'prob': 0.3},
-               # 'blur1': {'values': (3, 5), 'prob': 0.2, 'kernel_type': 'median'},
-               'brightness': {'values': (0.6, 1.0), 'prob': 0.1},
-               'brightness1': {'values': (1.0, 1.5), 'prob': 0.1},
-               # 'brightness_object': {'values': (1.0, 1.5), 'prob': 0.1},
-               # 'colour_balance': {'values': (0.4, 3), 'prob': 0.2},
-               # 'contrast': {'values': (0.5, 1.0), 'prob': 0.1},
-               # 'contrast1': {'values': (1.0, 4), 'prob': 0.1},
-               'flip': {'values': ('hor',), 'prob': 0.5},
-               'flip_object': {'values': ('hor',), 'prob': 0.5},
-               'grid_mask': {'values': (0, 0.2, 0, 0.2, 0.01, 0.1, 0.01, 0.1, 0.1, 0.2, 0.1, 0.2), 'prob': 1},
-               'grid_mask_object': {'values': (0, 0.2, 0, 0.2, 0.1, 0.15, 0.1, 0.15, 0.3, 0.3, 0.3, 0.3), 'prob': 0.3},
-               'illumination': {'values': ('blob_negative', 0.1, 0.2, 100, 150), 'prob': 0.2},
-               'noise': {'values': (13, 15), 'use_gray_noise': True, 'prob': 1},
-               # 'occlusion_object': {'values': ('cutout', 0.15, 0.2, 0.7, 0.9), 'prob': 0.3, 'num_patches': 1},
-               # 'occlusion_object1': {'values': ('cutout', 0.6, 0.8, 0.2, 0.3), 'prob': 0.3, 'num_patches': 1},
-               # 'rotate_object': {'values': (-10, 10), 'prob': 0.4},
-               # 'rotate': {'values': (-5, 5), 'prob': 0.2},
-               'shear_object': {'values': ('RANDOM', 10, 15), 'prob': 0.25},
-               'translate': {'values': ('RANDOM', -0.025, 0.025), 'prob': 0.2, 'use_replication': True},
-               'translate_object': {'values': ('RANDOM', -0.025, 0.025), 'prob': 0.25, 'use_replication': True},
-               'zoom': {'values': (0.9, 1.1), 'prob': 0.9, 'use_replication': True}}
-    # config1 = {'equal': ()}
-
-    config_in2 = {'brightness': {'values': (0.6, 1.0), 'prob': 0.1},
-                  'brightness1': {'values': (1.0, 1.5), 'prob': 0.1},
-                  'contrast': {'values': (0.5, 1.0), 'prob': 0.1},
-                  'flip': {'values': ('hor',), 'prob': 0.5},
-                  'grid_mask': {'values': (0, 0.2, 0, 0.2, 0.1, 0.15, 0.1, 0.15, 0.3, 0.3, 0.3, 0.3), 'prob': 0.3},
-                  'noise': {'values': (2, 8), 'use_gray_noise': True, 'prob': 0.7},
-                  'rotate': {'values': (-5, 5), 'use_colour': 0},
-                  'shear': {'values': ('RANDOM', 10, 15), 'prob': 0.25},
-                  # 'zoom': {'values': (0.95, 1.05), 'use_colour': -1, 'use_replication': False, 'keep_size': True}
-                  }
-
-    config2 = {'change_object': {'values': ('Inter', False, config_in2), 'number_copies': (1, 5),
-                                 'mix_images': mix_images}}
-
-    augmentor1 = Augmentor(config1, no_repetition=True)
-    augmentor2 = Augmentor(config2, no_repetition=True)
-    augmentor = lambda: augmentor1 if np.random.rand(1) > 0.4 else augmentor2
-
-    bb_im = [[[190, 30, 433, 242]]]
-
-    label = [0, 1]
-    aug = augmentor()
-    im = aug.run([image], labels=[label], object_label=[[label]], mask_positions=[],
-                 bounding_boxes=bb_im)  # , mask_positions=[0]
-
-    if isinstance(im, dict):
-        label = im.get('labels', [label])[0]
-        bb_im = im.get('bounding_boxes', bb_im)
-        im = im['images']
-
-    # if np.max(im[0]) < 2 or np.sum(im[0] - im[0].astype(int)) > 0.1:
-    #	lo = aug.last_operations
-    #	a=1
-
-    # plt.imshow(np.squeeze(im[0]))
-    plot_bb_image(np.squeeze(im[0].astype(np.uint8)), bb_im[0])
-    plt.title(f'label: {label}')
-    plt.show()
-    a = 1
-
-
-if __name__ == '__main__':
-    test()
-
-#######
-# THINGS TO ADD:
-# 0. Replication in Zoom does not flip images, images should be flip not only repeated. DONE
-# 1. use_replication to translation. DONE
-# 2. Implement rotation and then add use_colour, use_replication
-# 3. Add change red, green and blue channels independently.
-# 4. Add spline deformations
-# 5. Add GAN as augmentor.
-# 6. Add the object detection. DONE
-# 7. Add Object copy and paste. DONE
-# 8. Add Jitter transformation.

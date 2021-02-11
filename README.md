@@ -1,13 +1,17 @@
 ## Vyn Augment
 
 
-Library to perform augmentation of images for training deep learning models during the training stage. The 
+Library to perform augmentation of images for training deep learning models. The 
 transformations will be performed in the pre-processing step.
 
-This library is an alternative to <a href=https://github.com/mdbloice/Augmentor> Augmentor </a>, which performs 
-image augmentations to be stored in memory or creates an ready to use generator
-for some of the main deep learning frameworks. However, there are cases where you do not want
-to store the images in memory and still use your own generator.
+This library serves as educative library where all the transformations are methods of
+the Augmentor class rather than classes themselves. This makes learning how the process
+is done easier when learning or trying to modify an type of augmentation. 
+Although the library performes the operations a decent speed and the 
+number of transformations is large enough, other libraries like 
+<a href=https://github.com/aleju/imgaug> imaug </a> or <a href=https://github.com/mdbloice/Augmentor> Augmentor </a>
+are more stable and have larger number of possible transformations.
+
 
 ## Quick start guide
 The purpose of this repository is to create a small library to perform image augmentation
@@ -15,14 +19,14 @@ for training deep learning networks in a flexible manner.
 
 There are two main steps:
 1. Selection of the type of augmentation and parameters.
-2. Call the run function to apply to a given image.
+2. Call the run function to apply to a given image/s.
  
 
 ## Selection of the transformation and parameters
 Currently, all the operations require a range of values for each of the parameters.
 This range is specified with the minimum value and maximum value that the user wants
-to use. For instance, the rotation of an image would required 2 values the minimum angle
-and the maximum angle. Then, an uniform distribution will be used to select a value from
+to use. For instance, the rotation of an image would require 2 values: the minimum angle
+and the maximum angle. Then, a uniform distribution will be used to select a value from
 the range.
 
 In addition, most of the parameters that represents the size (for instance translation of an image)
@@ -163,23 +167,23 @@ augmentor = Augmentor(config)
 
 Notice that 
 ```
-config = {'brightness': (0.5,5.0)}
+config = {'brightness': (0.5, 5.0)}
 ```
 is the same as
 ```
-config = {'brightness': {'values': (0.5,5.0)}}
+config = {'brightness': {'values': (0.5, 5.0)}}
 ```
 
 Notice that the config's keys are the same name as the methods. Thus in case the same operation needs to be used more
 than once, numbers can be used after the name. For instance,
 
 ```
-config = {'brightness': {'values': (1.5,5.0)},
-           'brightness1': {'values': (0.1,0.5)}}
+config = {'brightness': {'values': (1.5, 5.0)},
+           'brightness1': {'values': (0.1, 0.5)}}
 ```
 
 ## Applying the operations on images
-Once the pipeline has been stablished, the image can be augmented by calling
+Once the pipeline has been established, the image can be augmented by calling
 the `run` method.
 ```
 images_aug = augmentor.run(images, mask_positions=[], labels=[])
@@ -188,13 +192,13 @@ images_aug = augmentor.run(images, mask_positions=[], labels=[])
 The extra parameters for the `run` method are:
 
 - <b>mask_positions</b>: This parameter is used to specified that an image is a segmentation mask. The implication is that
-                        some operations will not be performed and some other will be perfome differently. For instance,
+                        some operations will not be performed, and some other will be perfomed differently. For instance,
                         operations that modifies the images intensities will not be applied like `contrast`, `illumination`, 
                         `solarise`, `posterise` etc... On the other hand, operations that perform a occlusion of a part of the
                         image will always use black patches regardless the user selecting noise for the patch.
 - <b>labels</b>: It represents the labels of the image when using classification. This is useful for operations
                 like the `sample_pairing`. Notice that one_hot vector should beb used, the reason is that `sample_pairing`
-                average images and labels to create new samples and this weigted average does not make sense for one-number
+                average images and labels to create new samples and this weighted average does not make sense for one-number
                 label.
 - <b>bounding_boxes</b>: A list of lists of lists. This variable contains a list for each image, whose values are each of the
                     bounding boxes within the image. This bounding boxes are a list with 4 values [xtl, ytl, xbr, ybr], 

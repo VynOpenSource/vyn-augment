@@ -1,6 +1,6 @@
 import math
 import os
-
+from typing import List, Union
 
 import numpy as np
 from PIL import Image, ImageOps, ImageEnhance
@@ -82,18 +82,23 @@ class Augmentor(object):
 
         self.no_repetition = no_repetition
 
-        self.skew_types = ["TILT", "TILT_LEFT_RIGHT", "TILT_TOP_BOTTOM", "CORNER", "RANDOM", "ALL"]
-        self.flip_types = ['VERTICAL', 'VER', 'HORIZONTAL', 'HOR', 'RANDOM', 'ALL']
-        self.occlusion_types = ['hide_and_seek', 'cutout']
-        self.illumination_types = ['blob_positive', 'blob_negative', 'blob', 'constant_positive', 'constant_negative',
+        self._skew_types = ["TILT", "TILT_LEFT_RIGHT", "TILT_TOP_BOTTOM", "CORNER", "RANDOM", "ALL"]
+        self._flip_types = ['VERTICAL', 'VER', 'HORIZONTAL', 'HOR', 'RANDOM', 'ALL']
+        self._occlusion_types = ['hide_and_seek', 'cutout']
+        self._illumination_types = ['blob_positive', 'blob_negative', 'blob', 'constant_positive', 'constant_negative',
                                    'constant', 'positive', 'negative', 'all', 'random']
-        self.locations = ['no', 'intra', 'inter']
+        self._locations = ['no', 'intra', 'inter']
 
         self.initial_prob = {'flip': 0.5, 'solarise': 0.5, 'greyscale': 0.5, 'rgb_swapping': 0.5}
 
-        self.numpy_fun = ['blur', 'change', 'grid_mask', 'illumination', 'noise', 'occlusion', 'posterisation',
+        # There are methods that are going to be run by PIL and others by numpy functions. In order to speed up the
+        # all the methods that require a PIL image are going to be run first followed by those that uses numpy arrays.
+        # This internal member variables contains the name of the methods/transformations using numpy arrays
+        self._numpy_fun = ['blur', 'change', 'grid_mask', 'illumination', 'noise', 'occlusion', 'posterisation',
                           'rgb_swapping', 'sample_pairing', 'translate', 'zoom']
 
+        # This variable will stored the name of the methods use last time. It can be used to check the transformations
+        # that were performed on the augmented images.
         self.last_operations = []
 
     @property
@@ -105,7 +110,7 @@ class Augmentor(object):
         self._operations = operations
         self.perform_checker = True
 
-    def rescale(self, im, min_int=None, max_int=None):
+    def rescale(self, im: np.ndarray, min_int=None, max_int=None) -> np.ndarray:
         """
         Rescale an image between 0 and 255
         """
@@ -118,7 +123,7 @@ class Augmentor(object):
             max_int = min(np.max(im), 255) - min_int
         return (max_int * (im.astype(np.float) - np.min(im)) / (np.max(im) - np.min(im)) + min_int).astype(np.uint8)
 
-    def run(self, images, **kwargs):
+    def run(self, images: List[np.ndarray], **kwargs):
         self.last_operations = []
         if len(images) == 0:
             return images
@@ -134,7 +139,7 @@ class Augmentor(object):
             pos = operation2.find('_object')
             if pos >= 0:
                 operation2 = operation2[:operation2.find('_object')]
-            if operation2 in self.numpy_fun:
+            if operation2 in self._numpy_fun:
                 new_operations['numpy'][operation] = values
             else:
                 new_operations['pil'][operation] = values
@@ -234,7 +239,7 @@ class Augmentor(object):
 
         return output
 
-    def check_images_equal_size(self, images):
+    def check_images_equal_size(self, images: List[Union[np.ndarray, Image.Image]]) -> bool:
         """
         Check that all the images have the same size
         :param images: A list of images
@@ -252,7 +257,8 @@ class Augmentor(object):
 
         return True
 
-    def check_groups_images_equal_size(self, images, images2):
+    def check_groups_images_equal_size(self, images: List[Union[np.ndarray, Image.Image]],
+                                       images2: List[Union[np.ndarray, Image.Image]]) -> bool:
         """
         Check that all the images in images and images2 has the same size. It assumes that both images and images2
         have at least one image
@@ -265,11 +271,11 @@ class Augmentor(object):
 
         return output and self.check_images_equal_size([np.array(images[0]), np.array(images2[0])])
 
-    def _correct_bb(self, bb, max_size):
+    def _correct_bb(self, bb: List[int], max_size: List[int]) -> bool:
         """
         Correct the bb so that the values are clipped to 0 and max_size
-        :param bb (list): The bb values [x0, y0, xend, yend]
-        :param max_size (list):  The maximum size of the image (w, h
+        :param bb: The bb values [x0, y0, xend, yend]
+        :param max_size:  The maximum size of the image (w, h
         :return: Clipped bb
         """
         for i, bb_i in enumerate(bb):
@@ -279,12 +285,12 @@ class Augmentor(object):
 
         return bb
 
-    def _is_wrong_bbs(self, bbs, num_images):
+    def _is_wrong_bbs(self, bbs: List[List[List[int]]], num_images: int) -> bool:
         """
         Check whether the bounding boxes are correctly passed.
-        :param bbs (list): This should a list of lists of lists for each image a list of bounding
+        :param bbs: This should a list of lists of lists for each image a list of bounding
                             boxes and each bounding box should be a list of 4 values [x0, y0, x1, y1]
-        :param num_images (int): The number of images
+        :param num_images: The number of images
         :return: True if the bbs is correct otherwise false.
         """
         if not hasattr(bbs, '__len__'):
@@ -302,12 +308,12 @@ class Augmentor(object):
 
         return False
 
-    def apply_on_objects(self, images, values, **kwargs):
+    def apply_on_objects(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Apply a transformation in a set of objects in a set of images
-        :param images (list): A list of numpy arrays, each being an image
-        :param values (list): The values are specific of the operation.
-        :param kwargs (dictionary): Specific for the operation. However, in all object detection, the following values
+        :param images: A list of numpy arrays, each being an image
+        :param values: The values are specific of the operation.
+        :param kwargs: Specific for the operation. However, in all object detection, the following values
                                     can appear.
                                     -- operation (str): The name of the operation. This is passed automatically.
                                     -- bounding_boxes (mandatory): A list of lists of lists. A list  for
@@ -409,7 +415,7 @@ class Augmentor(object):
                     raise ValueError(f"""In {op}_object, bounding boxes found with less than 4 elements. 
                     They must be (x0, y0, x1, y1)""")
                 if np.random.rand() < prob:
-                    if op in self.numpy_fun:
+                    if op in self._numpy_fun:
                         inputs.append(images[i][bb[1]:bb[3], bb[0]:bb[2]])
                         if op.lower() == 'sample_pairing':
                             kwargs['labels'] = [labels[i][ii]]
@@ -444,7 +450,7 @@ class Augmentor(object):
                         bb = [bb[i] + bb_diff[i] for i in range(4)]
                         shape = [shape[i] + max(abs(bb_diff[i]), abs(bb_diff[i + 2])) for i in range(2)]
                         inputs = inputs['images']
-                        if op in self.numpy_fun:
+                        if op in self._numpy_fun:
                             new_shape = inputs[0].shape[1::-1]
                         else:
                             new_shape = inputs[0].size
@@ -466,14 +472,14 @@ class Augmentor(object):
                             bb[3] = im_shape[0]
                     else:
                         s = [0, 0, shape[0], shape[1]]
-                        if op in self.numpy_fun:
+                        if op in self._numpy_fun:
                             new_shape = inputs[0].shape[1::-1]
                         else:
                             new_shape = inputs[0].size
                         if shape[0] != new_shape[0] or shape[1] != new_shape[1]:
                             inputs[0] = imresize2(inputs[0], shape[1], shape[0])
 
-                    if op in self.numpy_fun:
+                    if op in self._numpy_fun:
                         images[i][bb[1]:bb[3], bb[0]:bb[2]] = inputs[0][s[1]:s[3], s[0]:s[2]]
                         for iii, p in enumerate(masks):
                             images[p][bb[1]:bb[3], bb[0]:bb[2]] = inputs[ii][s[1]:s[3], s[0]:s[2]]
@@ -484,7 +490,7 @@ class Augmentor(object):
 
         return images
 
-    def blur(self, images, values, **kwargs):
+    def blur(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Blur an image based on a Gaussian kernel. In future, new kernels should be added.
         :param images(list or array): A list or array of images, each being 3D
@@ -539,13 +545,13 @@ class Augmentor(object):
 
         return output
 
-    def brightness(self, images, values, **kwargs):
+    def brightness(self, images: List[Image.Image], values: list, **kwargs) -> List[Image.Image]:
         """
         Change the birghtness of the image, factors smaller than 0 will make the image darker and a factor greater than 1
         will make it brighter. 0 means completely black and it should be avoided
-        :param images(list or array): A list or array of images, each being 3D
+        :param images: A list of PIL images
         :param values: 2 values. The minimum and maximum change in brightness, the values must be between 0.05 and 10
-                                beynd those points the result are too dark or too bright respectively.
+                                beyond those points the result are too dark or too bright respectively.
         :return: A list with the images with some brightness change
         """
 
@@ -563,17 +569,17 @@ class Augmentor(object):
 
         return output
 
-    def change(self, images, values, bbs, **kwargs):
+    def change(self, images: List[np.ndarray], values: list, bbs: list, **kwargs) -> List[np.ndarray]:
         """
         Copy the transform object into a random location of the image or of a new image
-        :param image (list): List of images
-        :param values (list): The input of the transformation. There are 3 values
+        :param image: List of images
+        :param values: The input of the transformation. There are 3 values
                                     - String with the type of transformation ('No', 'Inter', Intra', where Inter means
                                         a different image is used and intra the same image.
                                     - Boolean to use the same location when copying or a random location
                                     - Dictionary with the possible transformations for the object. Use equal for no
                                         transformation.
-        :param bbs (list): The size of the object in the part
+        :param bbs: The size of the object in the part
         :param kwargs: Extra parameters.
                          - mix_images (mandatory?): It is only mandatory when the type_change is 'Inter'
                          - number_copies (optional): 1 by default. This is the number of copies of the object in a new
@@ -591,12 +597,12 @@ class Augmentor(object):
 
         if not isinstance(type_change, str):
             raise TypeError(
-                ('The first input of values must be a string with values' + '{}, ' * len(self.locations)).format(
-                    *self.locations)[:-2])
-        if type_change.lower() not in self.locations:
+                ('The first input of values must be a string with values' + '{}, ' * len(self._locations)).format(
+                    *self._locations)[:-2])
+        if type_change.lower() not in self._locations:
             raise ValueError(
                 (f'In change_object, the value {type_change} does not exists it should be one of ' + '{}, ' * len(
-                    self.locations)).format(*self.locations))[:-2]
+                    self._locations)).format(*self._locations))[:-2]
         if type_change.lower() == 'no':
             return images
         if not isinstance(random_location, bool):
@@ -692,7 +698,7 @@ class Augmentor(object):
 
         return {'images': images, 'bounding_boxes': bbs2}
 
-    def colour_balance(self, images, values, **kwargs):
+    def colour_balance(self, images: List[Image.Image], values: list, **kwargs) -> List[Image.Image]:
         """
         Change the saturation of the image, factors smaller than 1 will make the image darker and a factor greater than 1
         will make it brighter. 0 means completely black and it should be avoided
@@ -717,7 +723,7 @@ class Augmentor(object):
 
         return output
 
-    def contrast(self, images, values, **kwargs):
+    def contrast(self, images: List[Image.Image], values: list, **kwargs) -> List[Image.Image]:
         """
         Change the contrast of the image, factors smaller than 1 will make the image to have a solid colour and a factor greater than 1
         will make it brighter.
@@ -743,7 +749,7 @@ class Augmentor(object):
 
         return output
 
-    def crop(self, images, values, **kwargs):
+    def crop(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Perform a crop of the images. The main difference with zoom is that zoom creates a crop from the center of the
         image and respects the dimension of the images, in addition it may increase the size of the image.
@@ -858,7 +864,7 @@ class Augmentor(object):
 
         return output
 
-    def equal(self, images, values, **kwargs):
+    def equal(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Leave the images as they are. This operations is used in the case other operations are pile up. For instance,
         using equal_object with the option of change_location will make the original objects to be place in a different
@@ -867,7 +873,7 @@ class Augmentor(object):
         """
         return images
 
-    def flip(self, images, values, **kwargs):
+    def flip(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Flip the image, vertically, horizontally or both
         :param images: A list of numpy arrays, each being an image
@@ -890,9 +896,9 @@ class Augmentor(object):
         if self._is_wrong_bbs(bbs, len(images)):
             raise ValueError('In flip, The bbs were not correctly passed.')
 
-        if values.upper() not in self.flip_types:
+        if values.upper() not in self._flip_types:
             raise ValueError('''The name {} does not exist for the flip operation. 
-            Possible values are: {}'''.format(values, self.flip_types))
+            Possible values are: {}'''.format(values, self._flip_types))
         if values.lower() == 'random':
             values = np.random.choice(['horizontal', 'vertical', 'all'], 1)[0]
 
@@ -921,7 +927,7 @@ class Augmentor(object):
 
         return output
 
-    def greyscale(self, images, values, **kwargs):
+    def greyscale(self, images: List[Image.Image], values: list, **kwargs) -> List[Image.Image]:
         """
         Convert to greyscale with probability one
         :param images: A list of numpy arrays, each being an image
@@ -931,7 +937,8 @@ class Augmentor(object):
         :return: A list with the images converted into greyscale
         """
         no_mask_positions = np.ones(len(images)).astype(bool)
-        for pos in kwargs.get('mask_positions', []): no_mask_positions[pos] = False
+        for pos in kwargs.get('mask_positions', []):
+            no_mask_positions[pos] = False
 
         output = []
         for i, image in enumerate(images):
@@ -942,7 +949,7 @@ class Augmentor(object):
 
         return output
 
-    def grid_mask(self, images, values, **kwargs):
+    def grid_mask(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Add a grid mask to the images following https://arxiv.org/pdf/2001.04086.pdf
          :param images: A list of numpy arrays, each being an image
@@ -1002,7 +1009,7 @@ class Augmentor(object):
 
         return create_grid_masks(images, params[:2], params[2:4], params[4:], images_to_use, no_mask_positions.tolist())
 
-    def illumination(self, images, values, **kwargs):
+    def illumination(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
          Add illumination circles to the image following paper: https://arxiv.org/pdf/1910.08470.pdf
          :param images: A list of numpy arrays, each being an image
@@ -1023,10 +1030,10 @@ class Augmentor(object):
                 'The number of values for the illumination operation must be a list or tuple with 5 values'.format(
                     name))
 
-        if values[0].lower() not in self.illumination_types:
+        if values[0].lower() not in self._illumination_types:
             raise ValueError(
                 'The name {} does not exist for the flip operation. Possible values are: {}'.format(values[0],
-                                                                                                    self.illumination_types))
+                                                                                                    self._illumination_types))
 
         no_mask_positions = np.ones(len(images)).astype(bool)
         for pos in kwargs.get('mask_positions', []): no_mask_positions[pos] = False
@@ -1041,7 +1048,7 @@ class Augmentor(object):
 
         type_illumination = values[0].lower()
         if type_illumination == 'random':
-            type_illumination = np.random.choice(self.illumination_types[:-1], 1)
+            type_illumination = np.random.choice(self._illumination_types[:-1], 1)
 
         blob = np.zeros(shape[:2])
         if 'constant' not in type_illumination:
@@ -1087,7 +1094,7 @@ class Augmentor(object):
 
         return output
 
-    def noise(self, images, values, **kwargs):
+    def noise(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Add noise to the images
         :param images: A list of numpy arrays, each being an image
@@ -1119,7 +1126,7 @@ class Augmentor(object):
 
         return output
 
-    def occlusion(self, images, values, **kwargs):
+    def occlusion(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Perform hide and seek and cutout occlusions on some images
         :param images: A list of numpy arrays, each being an image
@@ -1143,10 +1150,10 @@ class Augmentor(object):
 
         if not hasattr(values, '__len__') or len(values) != 5:
             raise ValueError('The number of values for the occlusion operation must be a list or tuple with 5 values')
-        if values[0] not in self.occlusion_types:
+        if values[0] not in self._occlusion_types:
             raise ValueError(
                 'The name {} does not exist for the skew operation. Possible values are: {}'.format(values[0],
-                                                                                                    self.skew_types))
+                                                                                                    self._skew_types))
 
         no_mask_positions = np.ones(len(images)).astype(bool)
         for pos in kwargs.get('mask_positions', []): no_mask_positions[pos] = False
@@ -1168,7 +1175,7 @@ class Augmentor(object):
 
         return [self.rescale(image) for image in new_images]
 
-    def posterisation(self, images, values, **kwargs):
+    def posterisation(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Reduce the number of levels of the image. It is assumed a 255 level (at least it is going to be returned in this way).
         However, this will perform a reduction to less levels than 255
@@ -1205,7 +1212,7 @@ class Augmentor(object):
 
         return outputs
 
-    def rgb_swapping(self, images, values, **kwargs):
+    def rgb_swapping(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Swap to rgb components in the images
         :param images: A list of numpy arrays, each being an image
@@ -1228,7 +1235,7 @@ class Augmentor(object):
 
         return outputs
 
-    def rotate(self, images, values, **kwargs):
+    def rotate(self, images: List[Image.Image], values: list, **kwargs) -> List[Image.Image]:
         """
         Rotate an image by selecting an angle from a range
         :param images: A list of PIL arrays, each being an image
@@ -1314,33 +1321,6 @@ class Augmentor(object):
                     bbs[i][ii] = [min(get(xs, 0)), min(get(xs, 1)), max(get(xs, 0)), max(get(xs, 1))]
                     bbs[i][ii] = self._correct_bb([bbs[i][ii][iii] * factor[iii % 2] for iii in range(len(bbi))],
                                                   [w, h])
-            # image = Image.fromarray(self.rescale(image))
-
-            '''# Get size after rotation, which includes the empty space
-            X = image.size[0]
-            Y = image.size[1]
-
-            # Get our two angles needed for the calculation of the largest area
-            angle_a = abs(angle)
-            angle_b = 90 - angle_a
-
-            # Python deals in radians so get our radians
-            angle_a_rad = math.radians(angle_a)
-            angle_b_rad = math.radians(angle_b)
-
-            # Calculate the sins
-            angle_a_sin = math.sin(angle_a_rad)
-            angle_b_sin = math.sin(angle_b_rad)
-
-            # Find the maximum area of the rectangle that could be cropped
-            E = (angle_a_sin / angle_b_sin) * (Y - X * (angle_a_sin / angle_b_sin))
-            E = E / 1 - (angle_a_sin ** 2 / angle_b_sin ** 2)
-            B = X - E
-            A = (angle_a_sin / angle_b_sin) * B
-
-            # Crop this area from the rotated image
-            # image = image.crop((E, A, X - E, Y - A))
-            image = image.crop((int(round(E)), int(round(A)), int(round(X - E)), int(round(Y - A))))'''
 
             # Return the image, re-sized to the size of the image passed originally
             output.append(image.resize((w, h), resample=Image.BICUBIC))
@@ -1350,7 +1330,7 @@ class Augmentor(object):
 
         return output
 
-    def sample_pairing(self, images, values, **kwargs):
+    def sample_pairing(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         This augmentation performs a weighted average of the image being augmented an another one that must be included
         in the values. The paper recommends to use this augmentation in three steps for better convergence:
@@ -1420,7 +1400,7 @@ class Augmentor(object):
 
         return output
 
-    def sharpness(self, images, values, **kwargs):
+    def sharpness(self, images: List[Image.Image], values: list, **kwargs) -> List[Image.Image]:
         """
         Blurred or sharp an image
         :param images: A list of numpy arrays, each being an image
@@ -1451,7 +1431,7 @@ class Augmentor(object):
 
         return output
 
-    def shear(self, images, values, **kwags):
+    def shear(self, images: List[Image.Image], values: list, **kwargs) -> List[Image.Image]:
         """
         Shear transformation of an image from https://github.com/mdbloice/Augmentor/blob/master/Augmentor/Operations.py
         :param images: A list of numpy arrays, each being an image
@@ -1469,10 +1449,10 @@ class Augmentor(object):
 
         if not isinstance(values, (tuple, list)) or len(values) != 3:
             raise ValueError('The number of values for the shear operation must be a list or tuple with 3 values')
-        if values[0] not in self.flip_types:
+        if values[0] not in self._flip_types:
             raise ValueError(
                 'The name {} does not exist for the shear operation. Possible values are: {}'.format(values[0],
-                                                                                                     self.flip_types))
+                                                                                                     self._flip_types))
         if values[1] > values[2]:
             values = [values[2], values[1]]
         if values[1] < 0 or values[2] > 360:
@@ -1549,7 +1529,7 @@ class Augmentor(object):
 
         return outputs
 
-    def skew(self, images, values, **kwags):
+    def skew(self, images: List[Image.Image], values: list, **kwargs) -> List[Image.Image]:
         """
         Skew images
         :param images(list or array): A list or array of images, each being 3D. This method requires all the images
@@ -1575,16 +1555,16 @@ class Augmentor(object):
 
         if not isinstance(values, (tuple, list)) or len(values) != 3:
             raise ValueError('The number of values for the skew operation must be a list or tuple with 3 values')
-        if values[0] not in self.skew_types:
+        if values[0] not in self._skew_types:
             raise ValueError(
                 'The name {} does not exist for the skew operation. Possible values are: {}'.format(values[0],
-                                                                                                    self.skew_types))
+                                                                                                    self._skew_types))
 
         magnitude = checker('Skew', 'range of skewness', values[1:], 2, 0, 1)
 
         return skew(images, values[0], magnitude)
 
-    def solarise(self, images, values, **kwargs):
+    def solarise(self, images: List[Image.Image], values: list, **kwargs) -> List[Image.Image]:
         """
         Perform the solarisation of the image. This operation is computed by creating an inverse of the image, where
         high intensity pixels are changed to low and viceversa (255 - image normally).
@@ -1605,7 +1585,7 @@ class Augmentor(object):
 
         return output
 
-    def translate(self, images, values, **kwargs):
+    def translate(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Translate an image along x, y or both. The way to move is given as in flipping
         :param images: A list of numpy arrays, each being an image
@@ -1654,10 +1634,10 @@ class Augmentor(object):
         if not isinstance(values, (tuple, list)) or (len(values) != 3 and len(values) != 5):
             raise ValueError(
                 'The number of values for the translation operation must be a list or tuple with 3 or 5 values')
-        if values[0].upper() not in self.flip_types:
+        if values[0].upper() not in self._flip_types:
             raise ValueError(
                 'The name {} does not exist for the translate operation. Possible values are: {}'.format(values,
-                                                                                                         self.flip_types))
+                                                                                                         self._flip_types))
         for i, v in enumerate(values[1:]):
             if len(values) == 5:
                 j = 1 - i // 2  # There are four values (two ranges) and every two we use the same values of the shape. The inversion is because PIL uses x,y instead of height, width
@@ -1767,7 +1747,7 @@ class Augmentor(object):
 
         return output
 
-    def zoom(self, images, values, **kwargs):
+    def zoom(self, images: List[np.ndarray], values: list, **kwargs) -> List[np.ndarray]:
         """
         Zoom an image. This means to resize the image and then cropping it if the new size is larger or adding noise
         padding if it is smaller.

@@ -193,7 +193,7 @@ def set_generator(base):
                 else:
                     im, y = output
 
-                if isinstance(y, (str, tuple)):
+                if isinstance(y, (str, tuple, np.ndarray)):
                     y = [y]
 
             except Exception as e:

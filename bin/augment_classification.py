@@ -1,3 +1,8 @@
+"""
+This file as well as the other examples will store the augmented images in the vyn-augment/images/output_data folder.
+On the other hand, the folder notebooks contains the same examples with the images being plotted in the same file
+instead of being saved in memory. In addition, a better explanation about the augmentor options is provided.
+"""
 import os
 
 import numpy as np
@@ -9,10 +14,10 @@ from src.vyn_augment.augmentor import Augmentor
 
 def pre_processing_function(label, filename: str, augmentor: Augmentor = None):
     """
-    Pre-processing function. This function is run within the generator and it is performed to each individual image
+    Pre-processing function. This function is run within the generator, which calls it for each individual image
     regardless the batch size.
-    :param label: Anything that can be used as a identification for the image type
-    :param filename: The complete path to the image file
+    :param label: Anything that can be used as a identification for the image type.
+    :param filename: The complete path to the image file. This function will read the image into a numpy array.
     :param augmentor: An object of type Augmentor
     :return:
     """
@@ -42,7 +47,7 @@ def set_augmentor():
               'translate': {'values': ('RANDOM', -0.2, 0.2), 'prob': 0.2, 'use_replication': True},
               'zoom': {'values': (0.5, 1.5), 'prob': 0.9, 'use_replication': True}}
 
-    augmentor = Augmentor(config)
+    augmentor = Augmentor(config, no_repetition=True)
 
     return augmentor
 
@@ -72,7 +77,7 @@ def generate_n_augmented_images(data_dirname: str, root_dirname: str, n=20) -> N
             os.makedirs(save_dirname)
 
         filename = os.path.join(save_dirname, output_filename)
-        imsave(filename, image)
+        imsave(filename, image.astype(np.uint8))
         counter_labels[label] = counter + 1
 
 

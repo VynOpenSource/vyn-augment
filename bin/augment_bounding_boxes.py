@@ -1,3 +1,8 @@
+"""
+This file as well as the other examples will store the augmented images in the vyn-augment/images/output_data folder.
+On the other hand, the folder notebooks contains the same examples with the images being plotted in the same file
+instead of being saved in memory. In addition, a better explanation about the augmentor options is provided.
+"""
 import json
 import os
 
@@ -11,9 +16,9 @@ from src.vyn_augment.augmentor import Augmentor
 
 def pre_processing_function(bb_filename: str, filename: str, augmentor: Augmentor = None):
     """
-    Pre-processing function. This function is run within the generator and it is performed to each individual image
+    Pre-processing function. This function is run within the generator, which calls it for each individual image
     regardless the batch size.
-    :param mask_filename: The filename where the mask is stored.
+    :param mask_filename: The filename where the mask is stored. This function will read the image into a numpy array.
     :param filename: The complete path to the image file
     :param augmentor: An object of type Augmentor
     :return:
@@ -42,6 +47,8 @@ def pre_processing_function(bb_filename: str, filename: str, augmentor: Augmento
     for bb_i, class_i in zip(bbs2, classes):
         bbs.append([class_i] + [coord/float(size) for coord, size in zip(bb_i, sizes)])
 
+    # Returning the name or label is not mandatory, it will just be used to give a name to the file when saving the
+    # augmented image
     label = os.path.basename(filename)
     label = label[:label.rfind('.')]
 
@@ -72,7 +79,7 @@ def set_augmentor():
               'zoom': {'values': (0.5, 1.5), 'prob': 0.9, 'use_replication': False},
               'zoom_object': {'values': (0.5, 1.5), 'prob': 0.9, 'use_replication': False}}
 
-    augmentor = Augmentor(config)
+    augmentor = Augmentor(config, no_repetition=True)
 
     return augmentor
 
@@ -112,7 +119,7 @@ def generate_n_augmented_images(data_dirname: str, root_dirname: str, n=20, plot
         mask_filename = label + '_' + str(counter).zfill(4) + '.txt'
 
         filename = os.path.join(image_dirname, image_filename)
-        imsave(filename, image)
+        imsave(filename, image.astype(np.uint8))
 
         filename = os.path.join(bb_dirname, mask_filename)
         with open(filename, 'w') as f:

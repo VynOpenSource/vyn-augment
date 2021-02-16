@@ -197,7 +197,7 @@ def set_generator(base):
                     y = [y]
 
             except Exception as e:
-                raise
+                print(f"Error at handling image: {values[0]}. The error was: {repr(e)}")
                 return None, None
 
             if im is not None:

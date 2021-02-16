@@ -1,10 +1,8 @@
 import math
-import os
 from typing import List, Union
 
 import numpy as np
 from PIL import Image, ImageOps, ImageEnhance
-from skimage.io import imread
 from skimage.filters import gaussian, median
 from skimage.transform import resize as imresize
 

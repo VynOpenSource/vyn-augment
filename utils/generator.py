@@ -3,13 +3,22 @@ import secrets
 from typing import List
 
 import numpy as np
-import tensorflow as tf
-from torch.utils.data import Dataset, DataLoader
+
+# This is to avoid the installation of the tensorflow and pytorch only for the experiments
+try:
+    from tf.keras.utils import Sequence
+except ImportError as e:
+    class Sequence: pass
+
+try:
+    from torch.utils.data import Dataset
+except ImportError as e:
+    class Dataset: pass
 
 
 def set_generator(base):
     if base.lower() == 'keras':
-        base_class = tf.keras.utils.Sequence
+        base_class = Sequence
     elif base.lower() == 'pytorch':
         base_class = Dataset
     else:
@@ -89,6 +98,9 @@ def set_generator(base):
             # Find list of IDs
             list_urls_temp = [self.list_urls[k] for k in indexes]"""
             #
+            if index >= len(self):
+                raise IndexError(f'index {index} is out of bound')
+
             labels = []
             y = []
             i = 0

@@ -4,14 +4,14 @@ from typing import List
 
 import numpy as np
 import tensorflow as tf
-#from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader
 
 
 def set_generator(base):
     if base.lower() == 'keras':
         base_class = tf.keras.utils.Sequence
     elif base.lower() == 'pytorch':
-        base_class = ''#Dataset
+        base_class = Dataset
     else:
         raise ValueError('Only keras and pytorch are allowed base classes')
 

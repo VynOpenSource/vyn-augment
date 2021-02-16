@@ -259,6 +259,18 @@ An example of image and mask augmentation for an operation that is applied to th
     <td><p float="left"><img src="./images/squirrel_aug2.jpg" width=300 ></p></td>
   </tr>
  </table>
+
+## Examples
+There are two group of examples:
+
+**Notebooks**: 
+There are three notebooks following the type of augmentation that could be done for 
+classification, segmentation and object detection.
+
+**Scripts**: 
+There are also three scripts following the type of augmentation that could be done for 
+classification, segmentation and object detection. The main difference with respect to
+the notebooks is that the results will be saved in memory.
  
  ## Acknowledgements
  

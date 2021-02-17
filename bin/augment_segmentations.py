@@ -102,7 +102,8 @@ def generate_n_augmented_images(data_dirname: str, root_dirname: str, n=20) -> N
 
 
 if __name__ == '__main__':
-    data_dirname = '../images/segmentation'
-    root_dirname = '../images/output_data/segmentation'
+    root = os.path.dirname(os.path.dirname(__file__))
+    data_dirname = os.path.join(root, 'images', 'segmentation')
+    root_dirname = os.path.join(root, 'images', 'output_data', 'segmentation')
 
     generate_n_augmented_images(data_dirname, root_dirname)

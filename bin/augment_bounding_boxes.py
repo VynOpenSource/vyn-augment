@@ -132,7 +132,8 @@ def generate_n_augmented_images(data_dirname: str, root_dirname: str, n=20, plot
 
 
 if __name__ == '__main__':
-    data_dirname = '../images/object_detection'
-    root_dirname = '../images/output_data/object_detection'
+    root = os.path.dirname(os.path.dirname(__file__))
+    data_dirname = os.path.join(root, 'images', 'object_detection')
+    root_dirname = os.path.join(root, 'images', 'output_data', 'object_detection')
 
     generate_n_augmented_images(data_dirname, root_dirname, plot=False)

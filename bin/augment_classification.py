@@ -82,7 +82,8 @@ def generate_n_augmented_images(data_dirname: str, root_dirname: str, n=20) -> N
 
 
 if __name__ == '__main__':
-    data_dirname = '../images/classification'
-    root_dirname = '../images/output_data/classification'
+    root = os.path.dirname(os.path.dirname(__file__))
+    data_dirname = os.path.join(root, 'images', 'classification')
+    root_dirname = os.path.join(root, 'images', 'output_data', 'classification')
 
     generate_n_augmented_images(data_dirname, root_dirname)

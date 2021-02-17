@@ -130,6 +130,8 @@ def generate_n_augmented_images(data_dirname: str, root_dirname: str, n=20, plot
 
         counter_labels[label] = counter + 1
 
+    print(f'Finished image generation. The output images were saved in {root_dirname}')
+
 
 if __name__ == '__main__':
     root = os.path.dirname(os.path.dirname(__file__))

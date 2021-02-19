@@ -4,10 +4,12 @@ On the other hand, the folder notebooks contains the same examples with the imag
 instead of being saved in memory. In addition, a better explanation about the augmentor options is provided.
 """
 import os
+import sys
 
 import numpy as np
 from skimage.io import imread, imsave
 
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from utils.data_processing import set_generator_classifier
 from src.vyn_augment.augmentor import Augmentor
 

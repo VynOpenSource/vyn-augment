@@ -5,10 +5,12 @@ instead of being saved in memory. In addition, a better explanation about the au
 """
 import json
 import os
+import sys
 
 import numpy as np
 from skimage.io import imread, imsave
 
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from utils.data_processing import set_generator_object_detector
 from utils.visualisers import plot_bb_image
 from src.vyn_augment.augmentor import Augmentor
